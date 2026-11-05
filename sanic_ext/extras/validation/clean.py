@@ -1,25 +1,21 @@
 from typing import Any, Optional, Type, get_origin, get_type_hints
 
-import pydantic
+from sanic_ext.utils.typing import is_pydantic
 
 
 def clean_data(
     model: type[object],
     data: dict[str, Any],
 ) -> dict[str, Any]:
-    if isinstance(model, pydantic.BaseModel):
-        hints: dict[str, type] = {}
-        for key, field in model.__annotations__.items():
+    if is_pydantic(model):
+        hints: dict[str, Any] = {}
+        for key, field in model.__pydantic_fields__.items():
             hints[key] = field.annotation
             if alias := (
                 getattr(field, "validation_alias", None)
                 or getattr(field, "alias", None)
             ):
                 hints[alias] = field.annotation
-        hints = {
-            key: field.annotation
-            for key, field in model.__annotations__.items()
-        }
     else:
         hints = get_type_hints(model)
     return {
